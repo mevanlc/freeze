@@ -132,6 +132,9 @@ func main() {
 	if config.Output == "" {
 		config.Output = defaultOutputFilename
 	}
+	if config.Rasterizer != rasterizerAuto && !strings.HasSuffix(config.Output, ".png") {
+		printErrorFatal("Invalid Usage", errors.New("--rasterizer requires PNG output"))
+	}
 
 	scale = 1
 	if autoHeight && autoWidth && strings.HasSuffix(config.Output, ".png") {
@@ -396,15 +399,7 @@ func main() {
 
 	switch {
 	case strings.HasSuffix(config.Output, ".png"):
-		// use libsvg conversion.
-		svgConversionErr := libsvgConvert(doc, imageWidth, imageHeight, config.Output)
-		if svgConversionErr == nil {
-			printFilenameOutput(config.Output)
-			break
-		}
-
-		// could not convert with libsvg, try resvg
-		svgConversionErr = resvgConvert(doc, imageWidth, imageHeight, config.Output)
+		svgConversionErr := rasterizePNG(config.Rasterizer, doc, imageWidth, imageHeight, config.Output)
 		if svgConversionErr != nil {
 			printErrorFatal("Unable to convert SVG to PNG", svgConversionErr)
 		}

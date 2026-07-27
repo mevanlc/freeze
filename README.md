@@ -14,7 +14,7 @@ Generate images of code and terminal output.
 
 ## Examples
 
-Freeze generates PNGs, SVGs, and WebPs of code and terminal output alike.
+Freeze generates PNGs and SVGs of code and terminal output alike.
 
 ### Generate an image of code
 
@@ -97,7 +97,7 @@ Screenshots can be customized with `--flags` or [Configuration](#configuration) 
 - [`-c`](#configuration), [`--config`](#configuration): Base configuration file or template.
 - [`-l`](#language), [`--language`](#language): Language to apply to code
 - [`-m`](#margin), [`--margin`](#margin): Apply margin to the window.
-- [`-o`](#output), [`--output`](#output): Output location for .svg, .png, .jpg.
+- [`-o`](#output), [`--output`](#output): Output location for `.svg` or `.png`.
 - [`-p`](#padding), [`--padding`](#padding): Apply padding to the code.
 - [`-r`](#border-radius), [`--border.radius`](#border-radius): Corner radius of window.
 - [`-t`](#theme), [`--theme`](#theme): Theme to use for syntax highlighting.
@@ -113,6 +113,8 @@ Screenshots can be customized with `--flags` or [Configuration](#configuration) 
 - [`--font.size`](#font): Font size to use for code.
 - [`--font.file`](#font): File path to the font to use (embedded in the SVG).
 - [`--line-height`](#font): Line height relative to font size.
+- [`--rasterizer`](#png-rasterizers): Select the PNG rasterizer.
+- [`--ansi-layout`](#ansi-layout): Select rune- or grapheme-based ANSI text layout.
 - [`--show-line-numbers`](#line-numbers): Show line numbers.
 - [`--lines`](#line-numbers): Lines to capture (start,end).
 
@@ -147,16 +149,58 @@ freeze artichoke.hs --theme dracula
 
 ### Output
 
-Change the output file location, defaults to `out.svg` or stdout if piped. This
-value supports `.svg`, `.png`, `.webp`.
+Change the output file location, which defaults to `freeze.png`. Freeze supports
+`.svg` and `.png` output.
 
 ```bash
 freeze main.go --output out.svg
 freeze main.go --output out.png
-freeze main.go --output out.webp
 
-# or all of the above
-freeze main.go --output out.{svg,png,webp}
+# or both
+freeze main.go --output out.{svg,png}
+```
+
+### PNG Rasterizers
+
+Use `--rasterizer=auto|rsvg|resvg|sips|chromium` to choose how Freeze converts
+its internal SVG to PNG:
+
+- `auto` (the default) uses `rsvg-convert` when available, then falls back to
+  Freeze's built-in `resvg` rasterizer.
+- `rsvg` requires `rsvg-convert` on `PATH`.
+- `resvg` uses the built-in rasterizer. It has bundled JetBrains Mono fonts but
+  does not load arbitrary system fonts.
+- `sips` uses the macOS `sips` command. Freeze adjusts the internal SVG for
+  CoreSVG's text-color and nested-SVG behavior before rasterizing it.
+- `chromium` looks for Google Chrome, Google Chrome Beta, Microsoft Edge, or
+  Chromium and asks the first available browser to rasterize the internal SVG
+  in headless mode.
+
+Any choice other than `auto` requires PNG output. Automatically sized PNGs
+retain Freeze's default 4x output scale.
+
+```bash
+tmux capture-pane -t 40 -peN | freeze -c full \
+  --font.family 'MesloLGSDZ Nerd Font,Apple Color Emoji' \
+  --rasterizer=sips
+
+tmux capture-pane -t 40 -peN | freeze -c full \
+  --font.family 'MesloLGSDZ Nerd Font,Apple Color Emoji' \
+  --rasterizer=chromium
+```
+
+### ANSI Layout
+
+ANSI input uses `--ansi-layout=rune` by default to preserve Freeze's existing
+SVG output. `--ansi-layout=grapheme` groups user-perceived characters such as
+emoji ZWJ sequences into terminal cells and positions those cells explicitly.
+This avoids splitting one displayed emoji across multiple SVG text spans.
+
+```bash
+tmux capture-pane -t 40 -peN | freeze -c full \
+  --font.family 'MesloLGSDZ Nerd Font,Apple Color Emoji' \
+  --ansi-layout=grapheme \
+  --rasterizer=chromium
 ```
 
 ### Font
@@ -349,6 +393,17 @@ Here's what an example configuration looks like:
   "line_height": 1.2
 }
 ```
+
+## Future
+
+- Expand ANSI SGR support, including bold, dim, inverse, conceal, default-color
+  resets, and bounds checking for malformed extended-color sequences.
+- Evolve the opt-in grapheme layout into a fuller terminal-screen model after
+  its compatibility and output-size tradeoffs are established.
+- Add platform-aware PNG golden tests so rasterizer regressions are checked at
+  the pixel level rather than relying primarily on SVG golden files.
+- Reduce Chromium cold-start time with a safely reusable profile or long-lived
+  browser process while preserving isolation between renders.
 
 ## Contributing
 

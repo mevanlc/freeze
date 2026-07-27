@@ -2,10 +2,20 @@ package main //nolint:revive
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/beevik/etree"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
+)
+
+// ANSILayout controls how printable ANSI text is represented in the SVG.
+type ANSILayout string
+
+const (
+	ansiLayoutRune     ANSILayout = "rune"
+	ansiLayoutGrapheme ANSILayout = "grapheme"
 )
 
 type dispatcher struct {
@@ -17,9 +27,18 @@ type dispatcher struct {
 	row     int
 	col     int
 	bgWidth int
+	pending strings.Builder
 }
 
 func (p *dispatcher) Print(r rune) {
+	if p.config.ANSILayout == ansiLayoutGrapheme {
+		p.pending.WriteRune(r)
+		return
+	}
+	p.printRune(r)
+}
+
+func (p *dispatcher) printRune(r rune) {
 	p.row = clamp(p.row, 0, len(p.lines)-1)
 	// insert the rune in the last tspan
 	children := p.lines[p.row].ChildElements()
@@ -48,10 +67,58 @@ func (p *dispatcher) Print(r rune) {
 	}
 }
 
+func (p *dispatcher) flushGraphemes() {
+	if p.pending.Len() == 0 {
+		return
+	}
+
+	graphemes := uniseg.NewGraphemes(p.pending.String())
+	for graphemes.Next() {
+		p.printGrapheme(graphemes.Str(), graphemes.Width())
+	}
+	p.pending.Reset()
+}
+
+func (p *dispatcher) printGrapheme(text string, width int) {
+	p.row = clamp(p.row, 0, len(p.lines)-1)
+	line := p.lines[p.row]
+	children := line.ChildElements()
+	if len(children) == 0 {
+		base := etree.NewElement("tspan")
+		base.CreateAttr("xml:space", "preserve")
+		line.AddChild(base)
+		children = append(children, base)
+	}
+
+	lastChild := children[len(children)-1]
+	if width == 0 {
+		lastChild.SetText(lastChild.Text() + text)
+	} else {
+		child := lastChild.Copy()
+		child.RemoveAttr("dx")
+		child.RemoveAttr("x")
+		child.SetText(text)
+		lineStart := parseSVGLength(line.SelectAttrValue("x", ""))
+		cellWidth := p.config.Font.Size * p.scale / fontHeightToWidthRatio
+		child.CreateAttr("x", fmt.Sprintf("%.2fpx", lineStart+float64(p.col)*cellWidth))
+		line.AddChild(child)
+	}
+
+	p.col += width
+	if p.bg != nil {
+		p.bgWidth += width
+	}
+}
+
 func (p *dispatcher) Execute(code byte) {
+	p.flushGraphemes()
 	if code == '\t' {
 		for p.col%16 != 0 {
-			p.Print(' ')
+			if p.config.ANSILayout == ansiLayoutGrapheme {
+				p.printGrapheme(" ", 1)
+			} else {
+				p.printRune(' ')
+			}
 		}
 	}
 	if code == '\n' {
@@ -99,6 +166,7 @@ func (p *dispatcher) endBackground() {
 }
 
 func (p *dispatcher) CsiDispatch(cmd ansi.Cmd, params ansi.Params) {
+	p.flushGraphemes()
 	if cmd != 'm' {
 		// ignore incomplete or non Style (SGR) sequences
 		return

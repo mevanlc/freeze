@@ -33,9 +33,11 @@ type Config struct {
 	Theme       string `json:"theme" help:"Theme to use for syntax highlighting." short:"t" group:"Settings" placeholder:"charm"`
 	Wrap        int    `json:"wrap" help:"Wrap lines at a specific width." short:"w" group:"Settings" default:"0" placeholder:"80"`
 
-	Output         string        `json:"output,omitempty" help:"Output location for {{.svg}}, {{.png}}, or {{.webp}}." short:"o" group:"Settings" default:"" placeholder:"freeze.svg"`
+	Output         string        `json:"output,omitempty" help:"Output location for {{.svg}} or {{.png}}." short:"o" group:"Settings" default:"" placeholder:"freeze.png"`
 	Execute        string        `json:"-" help:"Capture output of command execution." short:"x" group:"Settings" default:""`
 	ExecuteTimeout time.Duration `json:"-" help:"Execution timeout." group:"Settings" default:"10s" prefix:"execute." name:"timeout" hidden:""`
+	Rasterizer     Rasterizer    `json:"rasterizer,omitempty" help:"PNG rasterizer: auto, rsvg, resvg, sips, or chromium." group:"Settings" default:"auto" enum:"auto,rsvg,resvg,sips,chromium"`
+	ANSILayout     ANSILayout    `json:"ansi_layout,omitempty" help:"ANSI text layout: rune or grapheme." group:"Settings" default:"rune" enum:"rune,grapheme"`
 
 	// Decoration
 	Border Border `json:"border" embed:"" prefix:"border." group:"Border"`

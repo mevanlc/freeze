@@ -83,12 +83,41 @@ func TestFreezeHelp(t *testing.T) {
 		"--border.color", "Border color.",
 		"--shadow.blur", "Shadow Gaussian Blur.",
 		"--font.family", "Font family to use for code.",
+		"--rasterizer", "PNG rasterizer: auto, rsvg, resvg, sips, or chromium.",
+		"--ansi-layout", "ANSI text layout: rune or grapheme.",
 	}
 
 	for _, c := range contains {
 		if !strings.Contains(got, c) {
 			t.Fatalf("expected %s to contain \"%s\"", got, c)
 		}
+	}
+}
+
+func TestRasterizerFlagValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "PNG only",
+			args: []string{"test/input/artichoke.hs", "--rasterizer=chromium", "--output", "out.svg"},
+			want: "--rasterizer requires PNG output",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command(binary, tc.args...)
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatal("expected command to fail")
+			}
+			if !strings.Contains(string(output), tc.want) {
+				t.Fatalf("expected %q in output:\n%s", tc.want, output)
+			}
+		})
 	}
 }
 
