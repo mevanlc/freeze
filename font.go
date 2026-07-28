@@ -5,12 +5,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/alecthomas/chroma/v2/formatters/svg"
 	"github.com/charmbracelet/freeze/font"
 )
 
 func fontOptions(config *Config) ([]svg.Option, error) {
+	family, err := preprocessFontFamily(config.Font.Family)
+	if err != nil {
+		return nil, err
+	}
+	config.Font.Family = family
+	svgFamily := escapeXMLFontFamily(family)
+
 	if config.Font.File != "" {
 		bts, err := os.ReadFile(config.Font.File)
 		if err != nil {
@@ -31,16 +39,16 @@ func fontOptions(config *Config) ([]svg.Option, error) {
 
 		return []svg.Option{
 			svg.EmbedFont(
-				config.Font.Family,
+				svgFamily,
 				base64.StdEncoding.EncodeToString(bts),
 				format,
 			),
-			svg.FontFamily(config.Font.Family),
+			svg.FontFamily(svgFamily),
 		}, nil
 	}
 	if config.Font.Family != "JetBrains Mono" {
 		return []svg.Option{
-			svg.FontFamily(config.Font.Family),
+			svg.FontFamily(svgFamily),
 		}, nil
 	}
 	config.Font.Family = "JetBrains Mono"
@@ -52,4 +60,12 @@ func fontOptions(config *Config) ([]svg.Option, error) {
 		svg.EmbedFont(config.Font.Family, fontBase64, svg.WOFF2),
 		svg.FontFamily(config.Font.Family),
 	}, nil
+}
+
+func escapeXMLFontFamily(family string) string {
+	family = strings.ReplaceAll(family, `&`, `&amp;`)
+	family = strings.ReplaceAll(family, `"`, `&quot;`)
+	family = strings.ReplaceAll(family, `<`, `&lt;`)
+	family = strings.ReplaceAll(family, `>`, `&gt;`)
+	return family
 }

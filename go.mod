@@ -16,11 +16,13 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.15
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/charmbracelet/x/xpty v0.1.3
+	github.com/flopp/go-findfont v0.1.0
 	github.com/kanrichan/resvg-go v0.0.2-0.20231001163256-63db194ca9f5
 	github.com/mattn/go-isatty v0.0.22
 	github.com/mattn/go-runewidth v0.0.23
 	github.com/rivo/uniseg v0.4.7
 	github.com/tetratelabs/wazero v1.8.0
+	golang.org/x/image v0.44.0
 )
 
 require (
@@ -49,7 +51,7 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
-	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 )

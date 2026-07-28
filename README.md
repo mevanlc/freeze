@@ -234,6 +234,17 @@ tmux capture-pane -t 40 -peN | freeze -c full \
 Specify the font family, font size, and font line height of the output image.
 Defaults to `JetBrains Mono`, `14`(px), `1.2`(em).
 
+Font-family entries are split on commas, trimmed, and empty entries are removed.
+An entry wrapped in `/` is treated as a Go regular expression and replaced by
+the first matching installed font family. Unmatched expressions are omitted.
+Matched family names are quoted in the generated CSS. This makes portable
+fallback lists possible without knowing the exact installed font name:
+
+```bash
+freeze artichoke.hs \
+  --font.family '/(?i)Nerd.*Font.*Mono/,monospace,/(?i)emoji/'
+```
+
 ```bash
 freeze artichoke.hs \
   --font.family "SF Mono" \
@@ -386,6 +397,9 @@ There are also some default configurations built into `freeze` which can be pass
 
 - `base`: Simple screenshot of code.
 - `full`: macOS-like screenshot.
+- `terminal`: Like `full`, but without window controls or a shadow; uses
+  terminal-cell ANSI blocks and automatically selects installed Nerd and emoji
+  fonts.
 - `user`: Uses `~/.config/freeze/user.json`.
 
 If you use `--interactive` mode, a configuration file will be created for you at
@@ -395,6 +409,7 @@ in your screenshots.
 ```bash
 freeze -c base main.go
 freeze -c full main.go
+freeze -c terminal main.go
 freeze -c user main.go # alias for ~/.config/freeze/user.json
 freeze -c ./custom.json main.go
 ```
