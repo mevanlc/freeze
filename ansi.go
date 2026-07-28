@@ -3,6 +3,7 @@ package main //nolint:revive
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/beevik/etree"
 	"github.com/charmbracelet/x/ansi"
@@ -19,15 +20,19 @@ const (
 )
 
 type dispatcher struct {
-	scale   float64
-	svg     *etree.Element
-	bg      *etree.Element
-	config  *Config
-	lines   []*etree.Element
-	row     int
-	col     int
-	bgWidth int
-	pending strings.Builder
+	scale            float64
+	svg              *etree.Element
+	bg               *etree.Element
+	config           *Config
+	lines            []*etree.Element
+	row              int
+	col              int
+	bgWidth          int
+	pending          strings.Builder
+	blockGroup       *etree.Element
+	shadeDefs        *etree.Element
+	shadePatterns    map[string]string
+	nextShadePattern int
 }
 
 func (p *dispatcher) Print(r rune) {
@@ -52,18 +57,25 @@ func (p *dispatcher) printRune(r rune) {
 		lastChild = children[len(children)-1]
 	}
 
-	if runewidth.RuneWidth(r) > 1 {
+	width := runewidth.RuneWidth(r)
+	text := string(r)
+	if p.renderANSIBlock(r, lastChild) {
+		width = 1
+		text = " "
+	}
+
+	if width > 1 {
 		newChild := lastChild.Copy()
-		newChild.SetText(string(r))
+		newChild.SetText(text)
 		newChild.CreateAttr("dx", fmt.Sprintf("%.2fpx", (p.config.Font.Size/5)*p.scale))
 		p.lines[p.row].AddChild(newChild)
 	} else {
-		lastChild.SetText(lastChild.Text() + string(r))
+		lastChild.SetText(lastChild.Text() + text)
 	}
 
-	p.col += runewidth.RuneWidth(r)
+	p.col += width
 	if p.bg != nil {
-		p.bgWidth += runewidth.RuneWidth(r)
+		p.bgWidth += width
 	}
 }
 
@@ -91,6 +103,16 @@ func (p *dispatcher) printGrapheme(text string, width int) {
 	}
 
 	lastChild := children[len(children)-1]
+	if utf8.RuneCountInString(text) == 1 {
+		r, _ := utf8.DecodeRuneInString(text)
+		if p.renderANSIBlock(r, lastChild) {
+			p.col++
+			if p.bg != nil {
+				p.bgWidth++
+			}
+			return
+		}
+	}
 	if width == 0 {
 		lastChild.SetText(lastChild.Text() + text)
 	} else {
@@ -154,11 +176,7 @@ func (p *dispatcher) endBackground() {
 		return
 	}
 
-	width := (float64(p.bgWidth) + 0.5) * p.scale
-	if p.bgWidth == 0 {
-		width = 0
-	}
-
+	width := float64(p.bgWidth) * p.scale
 	p.bg.CreateAttr("width", fmt.Sprintf("%.5fpx", width*(p.config.Font.Size/fontHeightToWidthRatio)))
 	p.svg.InsertChildAt(0, p.bg)
 	p.bg = nil
@@ -239,6 +257,8 @@ func (p *dispatcher) CsiDispatch(cmd ansi.Cmd, params ansi.Params) {
 				p.beginBackground(fill)
 				i += 3
 			}
+		case 49:
+			p.endBackground()
 		case 100, 101, 102, 103, 104, 105, 106, 107:
 			p.beginBackground(ansiPalette[v])
 		}

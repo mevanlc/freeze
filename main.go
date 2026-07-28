@@ -136,13 +136,16 @@ func main() {
 		printErrorFatal("Invalid Usage", errors.New("--rasterizer requires PNG output"))
 	}
 
-	scale = 1
-	if autoHeight && autoWidth && strings.HasSuffix(config.Output, ".png") {
-		scale = 4
+	scaleExplicit := cliFlagSet(ctx, "scale")
+	if config.Scale < 0 || (scaleExplicit && config.Scale == 0) {
+		printErrorFatal("Invalid Usage", errors.New("--scale must be greater than zero"))
 	}
-
-	config.Margin = expandMargin(config.Margin, scale)
-	config.Padding = expandPadding(config.Padding, scale)
+	if scaleExplicit && !strings.HasSuffix(config.Output, ".png") {
+		printErrorFatal("Invalid Usage", errors.New("--scale requires PNG output"))
+	}
+	if scaleExplicit && (!autoHeight || !autoWidth) {
+		printErrorFatal("Invalid Usage", errors.New("--scale requires automatic width and height"))
+	}
 
 	if config.Input == "" && !in.IsPipe(os.Stdin) && len(ctx.Args) <= 0 {
 		_ = helpPrinter(kong.HelpOptions{}, ctx)
@@ -249,14 +252,21 @@ func main() {
 
 	image := elements[0]
 
+	terminal := image.SelectElement("rect")
+
+	w, h := svg.GetDimensions(image)
+	scale = 1
+	if autoHeight && autoWidth && strings.HasSuffix(config.Output, ".png") {
+		logicalWidth, logicalHeight := logicalAutoPNGDimensions(config, strippedInput, isAnsi, h)
+		scale = selectAutoPNGScale(config.Scale, logicalWidth, logicalHeight)
+	}
+
+	config.Margin = expandMargin(config.Margin, scale)
+	config.Padding = expandPadding(config.Padding, scale)
 	hPadding := config.Padding[left] + config.Padding[right]
 	hMargin := config.Margin[left] + config.Margin[right]
 	vMargin := config.Margin[top] + config.Margin[bottom]
 	vPadding := config.Padding[top] + config.Padding[bottom]
-
-	terminal := image.SelectElement("rect")
-
-	w, h := svg.GetDimensions(image)
 
 	imageWidth := float64(w)
 	imageHeight := float64(h)

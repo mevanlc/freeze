@@ -114,7 +114,9 @@ Screenshots can be customized with `--flags` or [Configuration](#configuration) 
 - [`--font.file`](#font): File path to the font to use (embedded in the SVG).
 - [`--line-height`](#font): Line height relative to font size.
 - [`--rasterizer`](#png-rasterizers): Select the PNG rasterizer.
+- [`--scale`](#png-rasterizers): Scale automatically sized PNG output.
 - [`--ansi-layout`](#ansi-layout): Select rune- or grapheme-based ANSI text layout.
+- [`--ansi-blocks`](#ansi-block-rendering): Select font- or terminal-cell rendering for ANSI block graphics.
 - [`--show-line-numbers`](#line-numbers): Show line numbers.
 - [`--lines`](#line-numbers): Lines to capture (start,end).
 
@@ -168,16 +170,20 @@ its internal SVG to PNG:
 - `auto` (the default) uses `rsvg-convert` when available, then falls back to
   Freeze's built-in `resvg` rasterizer.
 - `rsvg` requires `rsvg-convert` on `PATH`.
-- `resvg` uses the built-in rasterizer. It has bundled JetBrains Mono fonts but
-  does not load arbitrary system fonts.
+- `resvg` uses the built-in rasterizer. It accepts font-family lists containing
+  its bundled JetBrains Mono font but rejects system-font-only lists and large
+  text-heavy captures that exceed its embedded renderer's safety limits.
 - `sips` uses the macOS `sips` command. Freeze adjusts the internal SVG for
   CoreSVG's text-color and nested-SVG behavior before rasterizing it.
 - `chromium` looks for Google Chrome, Google Chrome Beta, Microsoft Edge, or
   Chromium and asks the first available browser to rasterize the internal SVG
   in headless mode.
 
-Any choice other than `auto` requires PNG output. Automatically sized PNGs
-retain Freeze's default 4x output scale.
+Any rasterizer choice other than `auto` requires PNG output. Automatically sized
+PNGs use a 4x output scale unless that would make either dimension exceed 4096
+pixels, in which case Freeze uses 2x. Set `--scale` to override this adaptive
+default; for example, `--scale=4` always retains the previous 4x output size.
+The scale option requires PNG output with both width and height left automatic.
 
 ```bash
 tmux capture-pane -t 40 -peN | freeze -c full \
@@ -200,6 +206,26 @@ This avoids splitting one displayed emoji across multiple SVG text spans.
 tmux capture-pane -t 40 -peN | freeze -c full \
   --font.family 'MesloLGSDZ Nerd Font,Apple Color Emoji' \
   --ansi-layout=grapheme \
+  --rasterizer=chromium
+```
+
+### ANSI Block Rendering
+
+Use `--ansi-blocks=terminal` to render terminal-cell graphics independently of
+the selected font. This keeps normal line spacing while making adjacent full
+blocks and fractional blocks meet exactly at cell boundaries, like Kitty and
+Ghostty. The default, `--ansi-blocks=font`, preserves font-based SVG output.
+
+Terminal rendering covers Unicode Block Elements (including shades and
+quadrants), Braille patterns, sextants, octants, and related grid-fill symbols.
+Other symbols, including classic box-drawing lines and curved legacy-computing
+characters, continue to use the selected font.
+
+```bash
+tmux capture-pane -t 40 -peN | freeze -c full \
+  --font.family 'MesloLGSDZ Nerd Font,Apple Color Emoji' \
+  --ansi-layout=grapheme \
+  --ansi-blocks=terminal \
   --rasterizer=chromium
 ```
 
@@ -386,6 +412,7 @@ Here's what an example configuration looks like:
   "shadow": false,
   "padding": [20, 40, 20, 20],
   "margin": "0",
+  "ansi_blocks": "font",
   "font": {
     "family": "JetBrains Mono",
     "size": 14
@@ -396,10 +423,13 @@ Here's what an example configuration looks like:
 
 ## Future
 
-- Expand ANSI SGR support, including bold, dim, inverse, conceal, default-color
-  resets, and bounds checking for malformed extended-color sequences.
+- Expand ANSI SGR support, including bold, dim, inverse, conceal, remaining
+  default-color resets, and bounds checking for malformed extended-color
+  sequences.
 - Evolve the opt-in grapheme layout into a fuller terminal-screen model after
   its compatibility and output-size tradeoffs are established.
+- Extend terminal-cell ANSI rendering to Kitty's remaining procedural
+  box-drawing, Powerline, and curved legacy-computing symbols.
 - Add platform-aware PNG golden tests so rasterizer regressions are checked at
   the pixel level rather than relying primarily on SVG golden files.
 - Reduce Chromium cold-start time with a safely reusable profile or long-lived

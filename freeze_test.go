@@ -85,6 +85,8 @@ func TestFreezeHelp(t *testing.T) {
 		"--font.family", "Font family to use for code.",
 		"--rasterizer", "PNG rasterizer: auto, rsvg, resvg, sips, or chromium.",
 		"--ansi-layout", "ANSI text layout: rune or grapheme.",
+		"--ansi-blocks", "ANSI block rendering: font or terminal.",
+		"--scale", "Scale automatically sized PNG output (defaults to 4x, or 2x above 4096px).",
 	}
 
 	for _, c := range contains {
@@ -94,7 +96,7 @@ func TestFreezeHelp(t *testing.T) {
 	}
 }
 
-func TestRasterizerFlagValidation(t *testing.T) {
+func TestPNGFlagValidation(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
@@ -104,6 +106,21 @@ func TestRasterizerFlagValidation(t *testing.T) {
 			name: "PNG only",
 			args: []string{"test/input/artichoke.hs", "--rasterizer=chromium", "--output", "out.svg"},
 			want: "--rasterizer requires PNG output",
+		},
+		{
+			name: "scale must be positive",
+			args: []string{"test/input/artichoke.hs", "--scale=0", "--output", "out.png"},
+			want: "--scale must be greater than zero",
+		},
+		{
+			name: "scale requires PNG",
+			args: []string{"test/input/artichoke.hs", "--scale=2", "--output", "out.svg"},
+			want: "--scale requires PNG output",
+		},
+		{
+			name: "scale requires automatic dimensions",
+			args: []string{"test/input/artichoke.hs", "--scale=2", "--width=800", "--output", "out.png"},
+			want: "--scale requires automatic width and height",
 		},
 	}
 
