@@ -20,11 +20,15 @@ Everything else behaves like upstream Freeze unless noted below.
 
 ### PNG rasterizers
 
-Use `--rasterizer=auto|rsvg|resvg|sips|chromium` to choose how Freeze converts
-its internal SVG to PNG:
+Use `--rasterizer=auto|rsvg-pdf|rsvg|resvg|sips|chromium` to choose how
+Freeze converts its internal SVG to PNG:
 
-- `auto` (the default) uses `rsvg-convert` when available and falls back to
-  Freeze's built-in `resvg` rasterizer.
+- `auto` (the default) uses `rsvg-pdf` when both of its commands are available,
+  then falls back to `rsvg` and finally Freeze's built-in `resvg` rasterizer.
+- `rsvg-pdf` requires `rsvg-convert` and Poppler's `pdftocairo` on `PATH`. It
+  renders SVG through librsvg's PDF path before producing a transparent PNG,
+  preserving color emoji that direct librsvg PNG rendering reduces to monochrome
+  glyph outlines.
 - `rsvg` requires `rsvg-convert` on `PATH`.
 - `resvg` uses the built-in rasterizer. It accepts only font-family lists that
   contain its bundled JetBrains Mono, and it refuses input with more than 1000
@@ -44,6 +48,7 @@ from `--rasterizer` or from a `"rasterizer"` key in a configuration file.
 ```bash
 tmux capture-pane -t 40 -peN | freeze -c terminal --rasterizer=sips
 tmux capture-pane -t 40 -peN | freeze -c terminal --rasterizer=chromium
+tmux capture-pane -t 40 -peN | freeze -c terminal --rasterizer=rsvg-pdf
 ```
 
 ### PNG output scale

@@ -19,7 +19,76 @@ const (
 	resvgRenderTimeout    = 30 * time.Second
 	resvgMemoryLimitPages = 8192 // 512 MiB of WebAssembly memory.
 	resvgMaxTextElements  = 1000
+	rsvgPDFRasterDPI      = "96"
 )
+
+type commandLookPath func(string) (string, error)
+
+type rsvgPDFRasterizer struct {
+	rsvgConvertPath string
+	pdftocairoPath  string
+}
+
+func newRSVGPDFRasterizer(lookPath commandLookPath) (pngRasterizer, error) {
+	rsvgConvertPath, err := lookPath("rsvg-convert")
+	if err != nil {
+		return nil, fmt.Errorf("rsvg-pdf requires rsvg-convert on PATH: %w", err)
+	}
+	pdftocairoPath, err := lookPath("pdftocairo")
+	if err != nil {
+		return nil, fmt.Errorf("rsvg-pdf requires pdftocairo on PATH: %w", err)
+	}
+
+	return rsvgPDFRasterizer{
+		rsvgConvertPath: rsvgConvertPath,
+		pdftocairoPath:  pdftocairoPath,
+	}, nil
+}
+
+func (r rsvgPDFRasterizer) Rasterize(doc *etree.Document, _, _ float64, output string) error {
+	svg, err := doc.WriteToBytes()
+	if err != nil {
+		return err //nolint: wrapcheck
+	}
+
+	pdf, err := os.CreateTemp("", "freeze-rsvg-*.pdf")
+	if err != nil {
+		return fmt.Errorf("create temporary PDF: %w", err)
+	}
+	pdfPath := pdf.Name()
+	defer os.Remove(pdfPath) //nolint: errcheck
+	if err := pdf.Close(); err != nil {
+		return fmt.Errorf("close temporary PDF: %w", err)
+	}
+
+	// The executable path was resolved from the fixed name "rsvg-convert" via exec.LookPath.
+	rsvg := exec.Command(r.rsvgConvertPath, "-f", "pdf", "-o", pdfPath) //nolint:gosec
+	rsvg.Stdin = bytes.NewReader(svg)
+	if output, err := rsvg.CombinedOutput(); err != nil {
+		return externalCommandError("render SVG to PDF with rsvg-convert", err, output)
+	}
+
+	pngBase := strings.TrimSuffix(output, ".png")
+	//nolint:gosec // The executable path was resolved from the fixed name "pdftocairo" via exec.LookPath.
+	pdftocairo := exec.Command(
+		r.pdftocairoPath,
+		"-png", "-singlefile", "-transp", "-r", rsvgPDFRasterDPI,
+		pdfPath, pngBase,
+	)
+	if output, err := pdftocairo.CombinedOutput(); err != nil {
+		return externalCommandError("rasterize PDF with pdftocairo", err, output)
+	}
+
+	return nil
+}
+
+func externalCommandError(operation string, err error, output []byte) error {
+	detail := strings.TrimSpace(string(output))
+	if detail == "" {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	return fmt.Errorf("%s: %w: %s", operation, err, detail)
+}
 
 func rsvgConvert(doc *etree.Document, _, _ float64, output string) error {
 	_, err := exec.LookPath("rsvg-convert")
@@ -131,7 +200,7 @@ func validateResvgFont(doc *etree.Document) error {
 	}
 
 	return fmt.Errorf(
-		"resvg supports only the bundled JetBrains Mono font, not %q; use rsvg, sips, or chromium for system fonts",
+		"resvg supports only the bundled JetBrains Mono font, not %q; use rsvg-pdf, rsvg, sips, or chromium for system fonts",
 		family,
 	)
 }
@@ -143,7 +212,7 @@ func validateResvgComplexity(doc *etree.Document) error {
 	}
 
 	return fmt.Errorf(
-		"resvg input contains %d text elements (limit %d); use rsvg, sips, or chromium for large text-heavy captures",
+		"resvg input contains %d text elements (limit %d); use rsvg-pdf, rsvg, sips, or chromium for large text-heavy captures",
 		textElements,
 		resvgMaxTextElements,
 	)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/beevik/etree"
 )
@@ -12,6 +13,7 @@ type Rasterizer string
 const (
 	rasterizerAuto     Rasterizer = "auto"
 	rasterizerRSVG     Rasterizer = "rsvg"
+	rasterizerRSVGPDF  Rasterizer = "rsvg-pdf"
 	rasterizerResvg    Rasterizer = "resvg"
 	rasterizerSips     Rasterizer = "sips"
 	rasterizerChromium Rasterizer = "chromium"
@@ -40,14 +42,26 @@ func (r fallbackRasterizer) Rasterize(doc *etree.Document, width, height float64
 }
 
 func newPNGRasterizer(name Rasterizer) (pngRasterizer, error) {
+	return newPNGRasterizerWithLookPath(name, exec.LookPath)
+}
+
+func newPNGRasterizerWithLookPath(name Rasterizer, lookPath commandLookPath) (pngRasterizer, error) {
 	rsvg := pngRasterizerFunc(rsvgConvert)
 	resvg := pngRasterizerFunc(resvgConvert)
+	rsvgFallback := fallbackRasterizer{primary: rsvg, fallback: resvg}
 
 	switch name {
 	case rasterizerAuto:
-		return fallbackRasterizer{primary: rsvg, fallback: resvg}, nil
+		rsvgPDF, err := newRSVGPDFRasterizer(lookPath)
+		if err != nil {
+			// An unavailable optional backend is not an error for automatic selection.
+			return rsvgFallback, nil //nolint:nilerr
+		}
+		return fallbackRasterizer{primary: rsvgPDF, fallback: rsvgFallback}, nil
 	case rasterizerRSVG:
 		return rsvg, nil
+	case rasterizerRSVGPDF:
+		return newRSVGPDFRasterizer(lookPath)
 	case rasterizerResvg:
 		return resvg, nil
 	case rasterizerSips:

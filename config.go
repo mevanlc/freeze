@@ -36,7 +36,7 @@ type Config struct {
 	Output         string        `json:"output,omitempty" help:"Output location for {{.svg}} or {{.png}}." short:"o" group:"Settings" default:"" placeholder:"freeze.png"`
 	Execute        string        `json:"-" help:"Capture output of command execution." short:"x" group:"Settings" default:""`
 	ExecuteTimeout time.Duration `json:"-" help:"Execution timeout." group:"Settings" default:"10s" prefix:"execute." name:"timeout" hidden:""`
-	Rasterizer     Rasterizer    `json:"rasterizer,omitempty" help:"PNG rasterizer: auto, rsvg, resvg, sips, or chromium." group:"Settings" default:"auto" enum:"auto,rsvg,resvg,sips,chromium"`
+	Rasterizer     Rasterizer    `json:"rasterizer,omitempty" help:"PNG rasterizer: auto, rsvg-pdf, rsvg, resvg, sips, or chromium." group:"Settings" default:"auto" enum:"auto,rsvg-pdf,rsvg,resvg,sips,chromium"`
 	ANSILayout     ANSILayout    `json:"ansi_layout,omitempty" help:"ANSI text layout: rune or grapheme." group:"Settings" default:"rune" enum:"rune,grapheme"`
 	ANSIBlocks     ANSIBlocks    `json:"ansi_blocks,omitempty" help:"ANSI block rendering: font or terminal." group:"Settings" default:"font" enum:"font,terminal"`
 	Scale          float64       `json:"-" help:"Scale automatically sized PNG output (defaults to 4x, or 2x above 4096px)." group:"Settings" placeholder:"4"`

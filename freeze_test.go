@@ -83,7 +83,7 @@ func TestFreezeHelp(t *testing.T) {
 		"--border.color", "Border color.",
 		"--shadow.blur", "Shadow Gaussian Blur.",
 		"--font.family", "Font family to use for code.",
-		"--rasterizer", "PNG rasterizer: auto, rsvg, resvg, sips, or chromium.",
+		"--rasterizer", "PNG rasterizer: auto, rsvg-pdf, rsvg, resvg, sips, or chromium.",
 		"--ansi-layout", "ANSI text layout: rune or grapheme.",
 		"--ansi-blocks", "ANSI block rendering: font or terminal.",
 		"--scale", "Scale automatically sized PNG output (defaults to 4x, or 2x above 4096px).",
