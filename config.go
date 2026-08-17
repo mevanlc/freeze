@@ -26,12 +26,17 @@ type Config struct {
 	Height     float64   `json:"height" help:"Height of terminal window." short:"H" group:"Window"`
 
 	// Settings
-	Version     bool   `json:"version" help:"Display Freeze's version." short:"v" group:"Settings"`
-	Config      string `json:"config,omitempty" help:"Base configuration file or template." short:"c" group:"Settings" default:"default" placeholder:"base"`
-	Interactive bool   `hidden:"" json:",omitempty" help:"Use an interactive form for configuration options." short:"i" group:"Settings"`
-	Language    string `json:"language,omitempty" help:"Language of code file." short:"l" group:"Settings" placeholder:"go"`
-	Theme       string `json:"theme" help:"Theme to use for syntax highlighting." short:"t" group:"Settings" placeholder:"charm"`
-	Wrap        int    `json:"wrap" help:"Wrap lines at a specific width." short:"w" group:"Settings" default:"0" placeholder:"80"`
+	Version       bool   `json:"version" help:"Display Freeze's version." short:"v" group:"Settings"`
+	ListTemplates bool   `json:"-" help:"List built-in configuration templates." group:"Settings"`
+	PrintTemplate string `json:"-" help:"Print a built-in configuration template as JSON." placeholder:"name" group:"Settings"`
+	ListLanguages bool   `json:"-" help:"List supported languages." group:"Settings"`
+	ListThemes    bool   `json:"-" help:"List syntax-highlighting themes." group:"Settings"`
+	PrintTheme    string `json:"-" help:"Print a syntax-highlighting theme as XML." placeholder:"name" group:"Settings"`
+	Config        string `json:"config,omitempty" help:"Base configuration file or template." short:"c" group:"Settings" default:"default" placeholder:"base"`
+	Interactive   bool   `hidden:"" json:",omitempty" help:"Use an interactive form for configuration options." short:"i" group:"Settings"`
+	Language      string `json:"language,omitempty" help:"Language of code file." short:"l" group:"Settings" placeholder:"go"`
+	Theme         string `json:"theme" help:"Theme to use for syntax highlighting." short:"t" group:"Settings" placeholder:"charm"`
+	Wrap          int    `json:"wrap" help:"Wrap lines at a specific width." short:"w" group:"Settings" default:"0" placeholder:"80"`
 
 	Output         string        `json:"output,omitempty" help:"Output location for {{.svg}} or {{.png}}." short:"o" group:"Settings" default:"" placeholder:"freeze.png"`
 	Execute        string        `json:"-" help:"Capture output of command execution." short:"x" group:"Settings" default:""`

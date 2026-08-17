@@ -13,8 +13,9 @@ This fork is based on upstream `main` and adds:
 - grapheme-based ANSI text layout, so emoji ZWJ sequences stay in one span;
 - terminal-cell rendering for ANSI block graphics;
 - regular-expression font-family resolution against installed fonts;
-- a built-in `terminal` configuration; and
-- exact one-cell-per-column ANSI background spans, plus SGR 49 handling.
+- a built-in `terminal` configuration;
+- exact one-cell-per-column ANSI background spans, plus SGR 49 handling; and
+- output-only discovery and inspection of templates, languages, and themes.
 
 Everything else behaves like upstream Freeze unless noted below.
 
@@ -137,6 +138,28 @@ configuration file, alongside the upstream keys.
 A background span is now exactly one cell wide per column it covers; upstream
 added an extra half cell, which made adjacent spans overlap. SGR 49
 (default background) also ends the current span, which upstream ignored.
+
+### Discover templates, languages, and themes
+
+Freeze can list its built-in configuration templates, supported languages, and
+syntax-highlighting themes without requiring input. Listings are sorted and
+write one name per line.
+
+```bash
+freeze --list-templates
+freeze --list-languages
+freeze --list-themes
+```
+
+An embedded template can be printed as its exact JSON definition. A registered
+Chroma theme can be printed as deterministic XML.
+
+```bash
+freeze --print-template terminal
+freeze --print-theme charm
+```
+
+These output-only flags cannot be combined with one another.
 
 ## building
 

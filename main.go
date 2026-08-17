@@ -77,6 +77,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	handled, introspectionErr := handleIntrospection(config, os.Stdout)
+	if introspectionErr != nil {
+		printErrorFatal("Invalid Usage", introspectionErr)
+	}
+	if handled {
+		return
+	}
+
 	// Copy the pty output to buffer
 	if config.Execute != "" {
 		input, err = executeCommand(config)

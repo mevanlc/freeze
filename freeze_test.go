@@ -87,6 +87,11 @@ func TestFreezeHelp(t *testing.T) {
 		"--ansi-layout", "ANSI text layout: rune or grapheme.",
 		"--ansi-blocks", "ANSI block rendering: font or terminal.",
 		"--scale", "Scale automatically sized PNG output (defaults to 4x, or 2x above 4096px).",
+		"--list-templates", "List built-in configuration templates.",
+		"--print-template", "Print a built-in configuration template as JSON.",
+		"--list-languages", "List supported languages.",
+		"--list-themes", "List syntax-highlighting themes.",
+		"--print-theme", "Print a syntax-highlighting theme as XML.",
 	}
 
 	for _, c := range contains {
