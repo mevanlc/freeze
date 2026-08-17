@@ -243,6 +243,9 @@ func (p *dispatcher) CsiDispatch(cmd ansi.Cmd, params ansi.Params) {
 				p.lines[p.row].AddChild(span)
 				i += 3
 			}
+		case 40, 41, 42, 43, 44, 45, 46, 47:
+			p.endBackground()
+			p.beginBackground(ansiPalette[v-10])
 		case 48:
 			p.endBackground()
 			i++
@@ -260,7 +263,8 @@ func (p *dispatcher) CsiDispatch(cmd ansi.Cmd, params ansi.Params) {
 		case 49:
 			p.endBackground()
 		case 100, 101, 102, 103, 104, 105, 106, 107:
-			p.beginBackground(ansiPalette[v])
+			p.endBackground()
+			p.beginBackground(ansiPalette[v-10])
 		}
 		i++
 	}

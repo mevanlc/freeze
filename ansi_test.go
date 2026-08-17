@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -129,6 +130,77 @@ func TestDispatcherBackgroundsOccupyExactCells(t *testing.T) {
 	greenX := parseSVGLength(green.SelectAttrValue("x", ""))
 	if math.Abs(greenX-cellWidth) > 0.01 {
 		t.Errorf("second background x: got %f, want %f", greenX, cellWidth)
+	}
+}
+
+func TestDispatcherANSIPaletteBackgrounds(t *testing.T) {
+	line := etree.NewElement("text")
+	group := etree.NewElement("g")
+	group.AddChild(line)
+	config := Config{
+		ANSILayout: ansiLayoutGrapheme,
+		Font:       Font{Size: 14},
+		LineHeight: 1.2,
+		Margin:     []float64{0, 0, 0, 0},
+		Padding:    []float64{0, 0, 0, 0},
+	}
+	d := dispatcher{
+		lines:  []*etree.Element{line},
+		svg:    group,
+		config: &config,
+		scale:  1,
+	}
+	parser := ansi.NewParser()
+	parser.SetHandler(ansi.Handler{
+		Print:     d.Print,
+		HandleCsi: d.CsiDispatch,
+		Execute:   d.Execute,
+	})
+
+	backgrounds := []struct {
+		code int
+		fill string
+	}{
+		{40, "#282a2e"},
+		{41, "#D74E6F"},
+		{42, "#31BB71"},
+		{43, "#D3E561"},
+		{44, "#8056FF"},
+		{45, "#ED61D7"},
+		{46, "#04D7D7"},
+		{47, "#C5C8C6"},
+		{100, "#4B4B4B"},
+		{101, "#FE5F86"},
+		{102, "#00D787"},
+		{103, "#EBFF71"},
+		{104, "#8F69FF"},
+		{105, "#FF7AEA"},
+		{106, "#00FEFE"},
+		{107, "#FFFFFF"},
+	}
+	var input strings.Builder
+	for _, background := range backgrounds {
+		fmt.Fprintf(&input, "\x1b[%dm \x1b[0m", background.code)
+	}
+	parser.Parse([]byte(input.String()))
+	d.Execute(ansi.LF)
+
+	cellWidth := config.Font.Size / fontHeightToWidthRatio
+	for i, background := range backgrounds {
+		rect := group.FindElement("rect[@fill='" + background.fill + "']")
+		if rect == nil {
+			t.Errorf("SGR %d: missing background rectangle with fill %s", background.code, background.fill)
+			continue
+		}
+		width := parseSVGLength(rect.SelectAttrValue("width", ""))
+		if math.Abs(width-cellWidth) > 0.00001 {
+			t.Errorf("SGR %d width: got %f, want one cell (%f)", background.code, width, cellWidth)
+		}
+		x := parseSVGLength(rect.SelectAttrValue("x", ""))
+		wantX := float64(i) * cellWidth
+		if math.Abs(x-wantX) > 0.01 {
+			t.Errorf("SGR %d x: got %f, want %f", background.code, x, wantX)
+		}
 	}
 }
 
