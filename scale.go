@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -53,4 +54,13 @@ func selectAutoPNGScale(requested, logicalWidth, logicalHeight float64) float64 
 		return largePNGScale
 	}
 	return defaultPNGScale
+}
+
+func snapPNGDimension(dimension float64) float64 {
+	const integerTolerance = 1e-9
+	rounded := math.Round(dimension)
+	if math.Abs(dimension-rounded) < integerTolerance {
+		return rounded
+	}
+	return math.Ceil(dimension)
 }

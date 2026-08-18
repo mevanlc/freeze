@@ -390,6 +390,15 @@ func main() {
 		}
 	}
 
+	if strings.HasSuffix(config.Output, ".png") {
+		snappedWidth := snapPNGDimension(imageWidth)
+		snappedHeight := snapPNGDimension(imageHeight)
+		terminalWidth += snappedWidth - imageWidth
+		terminalHeight += snappedHeight - imageHeight
+		imageWidth = snappedWidth
+		imageHeight = snappedHeight
+	}
+
 	if !autoHeight || !autoWidth {
 		svg.AddClipPath(image, "terminalMask",
 			config.Margin[left], config.Margin[top],

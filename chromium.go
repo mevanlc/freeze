@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	imagepng "image/png"
-	"math"
 	"net/url"
 	"os"
 	"os/exec"
@@ -50,7 +49,7 @@ func chromiumConvertWithExecutable(browser string, doc *etree.Document, width, h
 		urlPath = "/" + urlPath
 	}
 	fileURL := (&url.URL{Scheme: "file", Path: urlPath}).String()
-	windowSize := strconv.Itoa(int(math.Ceil(width))) + "," + strconv.Itoa(int(math.Ceil(height)))
+	windowSize := strconv.Itoa(int(snapPNGDimension(width))) + "," + strconv.Itoa(int(snapPNGDimension(height)))
 	cmd := exec.Command(browser, //nolint:gosec
 		"--headless=new",
 		"--disable-gpu",

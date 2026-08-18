@@ -48,8 +48,29 @@ func TestTerminalConfig(t *testing.T) {
 	if config.Shadow != (Shadow{}) {
 		t.Fatalf("terminal config shadow is %#v, want none", config.Shadow)
 	}
+	if config.Border != (Border{}) {
+		t.Fatalf("terminal config border is %#v, want none", config.Border)
+	}
+	for name, spacing := range map[string][]float64{
+		"margin":  config.Margin,
+		"padding": config.Padding,
+	} {
+		if len(spacing) != 4 {
+			t.Errorf("terminal config %s is %#v, want four zero values", name, spacing)
+			continue
+		}
+		for _, value := range spacing {
+			if value != 0 {
+				t.Errorf("terminal config %s is %#v, want four zero values", name, spacing)
+				break
+			}
+		}
+	}
 	if config.Background != "#000000" {
 		t.Fatalf("terminal config background is %q, want #000000", config.Background)
+	}
+	if config.ANSILayout != ansiLayoutGrapheme {
+		t.Fatalf("terminal config ANSI layout is %q, want %q", config.ANSILayout, ansiLayoutGrapheme)
 	}
 	if config.ANSIBlocks != ansiBlocksTerminal {
 		t.Fatalf("terminal config ANSI blocks is %q, want %q", config.ANSIBlocks, ansiBlocksTerminal)

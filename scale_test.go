@@ -26,3 +26,22 @@ func TestSelectAutoPNGScale(t *testing.T) {
 		})
 	}
 }
+
+func TestSnapPNGDimension(t *testing.T) {
+	tests := []struct {
+		name      string
+		dimension float64
+		want      float64
+	}{
+		{name: "integer", dimension: 950, want: 950},
+		{name: "floating point residue", dimension: 950.0000000000001, want: 950},
+		{name: "fractional", dimension: 950.1, want: 951},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := snapPNGDimension(tc.dimension); got != tc.want {
+				t.Errorf("snapPNGDimension(%v) = %v, want %v", tc.dimension, got, tc.want)
+			}
+		})
+	}
+}

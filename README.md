@@ -122,9 +122,12 @@ typographic family name.
 ### The `terminal` configuration
 
 `freeze -c terminal` is a built-in configuration for terminal captures. It
-matches `full` except that it drops the window controls and shadow, uses a pure
-black background, sets `ansi_blocks` to `terminal`, and resolves its font family
-from a regex list that picks up an installed Nerd Font and emoji font.
+uses a tight crop with no window controls, border, shadow, padding, or margin;
+uses a pure black background; sets `ansi_layout` to `grapheme` and `ansi_blocks`
+to `terminal`; and resolves its font family from a regex list that picks up an
+installed Nerd Font and emoji font. Explicit per-cell positioning keeps text and
+ANSI backgrounds on the same terminal grid. With PNG output, the black
+background reaches every image edge without a transparent gap.
 
 ```bash
 tmux capture-pane -pet 1 | freeze -c terminal -o pane.png
